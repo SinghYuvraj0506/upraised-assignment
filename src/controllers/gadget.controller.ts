@@ -10,6 +10,7 @@ import {
   updateGadgetSchema,
 } from "../schemas/gadget.schema";
 import ApiError from "../utils/ApiError";
+import { gadgetNames } from "../utils/constants";
 
 const getAllInclude = () => {
   return {
@@ -44,16 +45,58 @@ export const getAllgadgets = asyncHandler(
   }
 );
 
+
 export const createGadgets = asyncHandler(
   async (req: Request, res: Response) => {
     const {
       body: { name, success_probability },
     }: z.infer<typeof createGadgetSchema> = req;
 
+    let uniqueName = name;
+
+    if (!name) {
+      let availableNames = [...gadgetNames];
+
+      while (availableNames.length > 0) {
+        const randomIndex = Math.floor(Math.random() * availableNames.length);
+        const randomName = availableNames[randomIndex];
+
+        const existingGadget = await prisma.gadget.findUnique({
+          where: { name: randomName },
+        });
+
+        if (!existingGadget) {
+          uniqueName = randomName;
+          break;
+        }
+
+        availableNames.splice(randomIndex, 1);
+      }
+
+      // If all names are taken, generate a fallback name
+      if (!uniqueName) {
+        do {
+          uniqueName = `Gadget-${Math.random().toString(36).substring(2, 8)}`;
+        } while (
+          await prisma.gadget.findUnique({
+            where: { name: uniqueName },
+          })
+        );
+      }
+    } else {
+      const existingGadget = await prisma.gadget.findUnique({
+        where: { name },
+      });
+
+      if (existingGadget) {
+        throw new ApiError(400, "Gadget name must be unique");
+      }
+    }
+
     const gadget = await prisma.gadget.create({
       data: {
-        name: name ?? "s",
-        success_probability: success_probability,
+        name: uniqueName ?? "",
+        success_probability,
         user_id: req.user?.id as string,
       },
       select: getAllInclude(),
@@ -62,6 +105,7 @@ export const createGadgets = asyncHandler(
     res.json(new ApiResponse(200, gadget, "Created Gadget Successfully"));
   }
 );
+
 
 export const updateGadgets = asyncHandler(
   async (req: Request, res: Response) => {
