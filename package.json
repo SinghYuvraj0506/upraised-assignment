@@ -7,11 +7,12 @@
     "url": "https://yuvrajsingh.info"
   },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "prisma generate && tsc -p .",
     "prestart": "bun run build",
     "start": "node dist/index.js",
     "predev": "bun run build",
-    "dev": "tsc -w & nodemon dist/index.js"
+    "dev": "tsc -w & nodemon dist/index.js",
+    "postinstall": "prisma generate"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
