@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id String @id @default(uuid())
+
+  email        String           @unique
+  password     String?
+  name         String
+  image        String?
+  provider     ACCOUNT_PROVIDER
+  refreshToken String?
+  status       Int              @default(1)
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @default(now()) @updatedAt
+
+  gadget_destruction_code Int?
+
+  gadget       Gadget[]
+
+  @@map("users")
+}
+
+model Gadget {
+  id String @id @default(uuid())
+
+  name                String @unique
+  success_probability Int
+
+  status GADGET_STATUS @default(AVAILABLE)
+
+  decommissioned_at DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now()) @updatedAt
+
+  user_id     String
+  user       User @relation(fields: [user_id], references: [id])
+
+  @@map("gadget")
+}
+
+
+enum ACCOUNT_PROVIDER {
+  GOOGLE
+  CREDENTIALS
+}
+
+
+enum GADGET_STATUS {
+  AVAILABLE
+  DEPLOYED
+  DESTROYED
+  DECOMMISSIONED
+}
